@@ -1,0 +1,26 @@
+package com.topolyai.avest.android;
+
+import android.os.Bundle;
+import android.support.annotation.Nullable;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+
+import com.google.android.gms.maps.SupportMapFragment;
+import com.topolyai.avest.Bootstrap;
+
+public class VestSupportMapFragment extends SupportMapFragment {
+
+    private Bootstrap bootstrap;
+
+    @Override
+    public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+        bootstrap = DefaultBootstrap.get();
+        bootstrap.registerObject(this, true);
+        return super.onCreateView(inflater, container, savedInstanceState);
+    }
+
+    protected Bootstrap getBootstrap() {
+        return bootstrap;
+    }
+}
