@@ -1,17 +1,5 @@
 package com.topolyai.avest.android;
 
-import java.lang.annotation.Annotation;
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-
 import android.app.Activity;
 import android.app.ActivityManager;
 import android.app.AlarmManager;
@@ -46,6 +34,18 @@ import com.topolyai.avest.annotations.Layout;
 import com.topolyai.avest.annotations.PostConstruct;
 import com.topolyai.avest.annotations.ScreenElement;
 import com.topolyai.avest.annotations.Vest;
+
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 
 import dalvik.system.DexFile;
 
@@ -310,7 +310,7 @@ class DefaultBootstrap implements Bootstrap {
     private void createObjects() {
         try {
             DexFile df = new DexFile(context.getPackageCodePath());
-            for (Enumeration<String> iter = df.entries(); iter.hasMoreElements();) {
+            for (Enumeration<String> iter = df.entries(); iter.hasMoreElements(); ) {
                 String s = iter.nextElement();
                 if (s.startsWith(getAppPackageName())) {
                     Class<?> class1 = null;
@@ -348,18 +348,23 @@ class DefaultBootstrap implements Bootstrap {
         try {
             objs.put(o.getClass().getName(), o);
             resolveDependencies(o);
+            injectObjectWhereDependency(o);
             if (withView) {
                 injectViews(o);
             }
             invokePostConstruct(o);
-        } catch (IllegalAccessException e) {
-            e.printStackTrace();
-        } catch (IllegalArgumentException e) {
-            e.printStackTrace();
-        } catch (InvocationTargetException e) {
-            e.getTargetException().printStackTrace();
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
+        } catch (IllegalAccessException | NoSuchFieldException | IllegalArgumentException | InvocationTargetException | ClassNotFoundException e) {
+            Log.e("asd", e.getMessage(), e);
+        }
+    }
+
+    private void injectObjectWhereDependency(Object o) throws IllegalAccessException, ClassNotFoundException, NoSuchFieldException {
+        for (Object entry : objs.values()) {
+            for (Field field : entry.getClass().getDeclaredFields()) {
+                if (field.getAnnotation(Inject.class) != null && field.getType().isInstance(o)) {
+                    setFieldValue(entry, field, o);
+                }
+            }
         }
     }
 
@@ -367,21 +372,8 @@ class DefaultBootstrap implements Bootstrap {
         try {
             activity(o);
             injectViewOnScreenElement(o);
-        } catch (NoSuchMethodException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        } catch (IllegalAccessException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        } catch (IllegalArgumentException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        } catch (InvocationTargetException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        } catch (NoSuchFieldException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+        } catch (NoSuchMethodException | NoSuchFieldException | IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+            Log.e("asd", e.getMessage(), e);
         }
     }
 
