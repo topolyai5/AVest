@@ -53,9 +53,9 @@ class DefaultBootstrap implements Bootstrap {
 
     String TAG = getClass().getName();
 
-    Map<String, Object> objs = new HashMap<String, Object>();
-    List<Object> configs = new ArrayList<Object>();
-    List<Object> screenElements = new ArrayList<Object>();
+    Map<String, Object> objs = new HashMap<>();
+    List<Object> configs = new ArrayList<>();
+    List<Object> screenElements = new ArrayList<>();
 
     private Context context;
 
@@ -358,6 +358,16 @@ class DefaultBootstrap implements Bootstrap {
         }
     }
 
+    @Override
+    public void registerObject(Object obj) {
+        registerObject(obj, false);
+    }
+
+    @Override
+    public <T> void unregisterClass(Class<T> clazz) {
+        objs.remove(clazz.getName());
+    }
+
     private void injectObjectWhereDependency(Object o) throws IllegalAccessException, ClassNotFoundException, NoSuchFieldException {
         for (Object entry : objs.values()) {
             for (Field field : entry.getClass().getDeclaredFields()) {
@@ -427,6 +437,18 @@ class DefaultBootstrap implements Bootstrap {
     @Override
     public <T> T getVest(Class<T> clazz) {
         return clazz.cast(objs.get(clazz.getName()));
+    }
+
+    @Override
+    public void destroy() {
+        inst = null;
+        objs.clear();
+        screenElements.clear();
+        configs.clear();
+
+        objs = null;
+        screenElements = null;
+        configs = null;
     }
 
 }
