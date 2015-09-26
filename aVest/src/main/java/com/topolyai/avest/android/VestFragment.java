@@ -29,4 +29,22 @@ public class VestFragment extends Fragment {
         return bootstrap;
     }
 
+    @Override
+    public void onHiddenChanged(boolean hidden) {
+        if (hidden) {
+            hide();
+        } else {
+            show();
+        }
+        super.onHiddenChanged(hidden);
+    }
+
+    protected void hide() {
+
+    }
+
+    protected void show() {
+
+    }
+
 }
