@@ -221,7 +221,8 @@ class DefaultBootstrap implements Bootstrap {
 
     private void postConstructs() throws IllegalAccessException, IllegalArgumentException, InvocationTargetException,
             ClassNotFoundException {
-        Map<String, Object> l = new HashMap<String, Object>();
+        //clone for temp. if new objects are created in post construct, need resolve the dependencies in these objects
+        Map<String, Object> l = new HashMap<>();
         for (Entry<String, Object> object : objs.entrySet()) {
             l.put(object.getKey(), object.getValue());
         }
@@ -229,14 +230,25 @@ class DefaultBootstrap implements Bootstrap {
         for (Object obj : l.values()) {
             invokePostConstruct(obj);
         }
+
+        //if found a new object clone these as well
+        Map<String, Object> l2 = new HashMap<>();
         if (!objs.isEmpty()) {
-            for (Object object : objs.values()) {
+            for (Entry<String, Object> object : objs.entrySet()) {
+                l2.put(object.getKey(), object.getValue());
+            }
+        }
+
+        //copy the original object back to the map
+        for (Entry<String, Object> entry : l.entrySet()) {
+            objs.put(entry.getKey(), entry.getValue());
+        }
+
+        if (!l2.isEmpty()) {
+            for (Object object : l2.values()) {
                 resolveDependencies(object);
                 invokePostConstruct(object);
             }
-        }
-        for (Entry<String, Object> entry : l.entrySet()) {
-            objs.put(entry.getKey(), entry.getValue());
         }
     }
 
