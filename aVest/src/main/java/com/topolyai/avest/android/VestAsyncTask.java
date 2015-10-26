@@ -19,7 +19,7 @@ public abstract class VestAsyncTask<Params, Progress, Result> extends AsyncTask<
         bootstrap.registerObject(this, false);
     }
 
-    protected Bootstrap getBootstrap() {
+    public Bootstrap getBootstrap() {
         return bootstrap;
     }
 }

@@ -20,7 +20,7 @@ public abstract class VestOnMapLongClickListener implements OnMapLongClickListen
         return context;
     }
 
-    protected Bootstrap getBootstrap() {
+    public Bootstrap getBootstrap() {
         return bootstrap;
     }
 

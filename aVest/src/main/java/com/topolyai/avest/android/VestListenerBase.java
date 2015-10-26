@@ -19,7 +19,7 @@ public abstract class VestListenerBase {
         return context;
     }
 
-    protected Bootstrap getBootstrap() {
+    public Bootstrap getBootstrap() {
         return bootstrap;
     }
 

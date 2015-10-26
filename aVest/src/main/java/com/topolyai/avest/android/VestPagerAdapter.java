@@ -14,7 +14,7 @@ public abstract class VestPagerAdapter extends PagerAdapter {
         bootstrap.registerObject(this, false);
     }
 
-    protected Bootstrap getBootstrap() {
+    public Bootstrap getBootstrap() {
         return bootstrap;
     }
 

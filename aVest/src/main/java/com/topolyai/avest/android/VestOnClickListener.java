@@ -20,7 +20,7 @@ public abstract class VestOnClickListener implements OnClickListener {
         return context;
     }
 
-    protected Bootstrap getBootstrap() {
+    public Bootstrap getBootstrap() {
         return bootstrap;
     }
 

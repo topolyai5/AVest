@@ -305,13 +305,18 @@ class DefaultBootstrap implements Bootstrap {
             if (annotation != null) {
                 Class<?> type = field.getType();
                 Object object = null;
-                if (type.isInstance(context)) {
-                    type = Class.forName("android.content.Context");
-                    object = objs.get(type.getName());
-                } else if (FragmentManager.class.equals(type) && context instanceof VestFragmentActivity) {
-                    object = ((VestFragmentActivity) context).getSupportFragmentManager();
-                } else {
-                    object = objs.get(type.getName());
+                if (!annotation.value().isEmpty()) {
+                    object = objs.get(annotation.value());
+                }
+                if (object == null) {
+                    if (type.isInstance(context)) {
+                        type = Class.forName("android.content.Context");
+                        object = objs.get(type.getName());
+                    } else if (FragmentManager.class.equals(type) && context instanceof VestFragmentActivity) {
+                        object = ((VestFragmentActivity) context).getSupportFragmentManager();
+                    } else {
+                        object = objs.get(type.getName());
+                    }
                 }
                 field.setAccessible(true);
                 field.set(obj, object);
@@ -442,8 +447,7 @@ class DefaultBootstrap implements Bootstrap {
 
     @Override
     public <T> T getVest(String name, Class<T> clazz) {
-        // TODO Auto-generated method stub
-        return null;
+        return clazz.cast(objs.get(name));
     }
 
     @Override

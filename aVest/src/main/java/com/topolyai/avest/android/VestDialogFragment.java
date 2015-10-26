@@ -29,7 +29,7 @@ public class VestDialogFragment extends DialogFragment {
         return layout;
     }
 
-    protected Bootstrap getBootstrap() {
+    public Bootstrap getBootstrap() {
         return bootstrap;
     }
 

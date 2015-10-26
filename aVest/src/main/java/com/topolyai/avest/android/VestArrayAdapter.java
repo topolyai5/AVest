@@ -23,7 +23,7 @@ public class VestArrayAdapter<T> extends ArrayAdapter<T> {
         return resId;
     }
 
-    protected Bootstrap getBootstrap() {
+    public Bootstrap getBootstrap() {
         return bootstrap;
     }
 

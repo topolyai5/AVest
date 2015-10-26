@@ -15,7 +15,7 @@ public class VestFragmentActivity extends FragmentActivity {
         bootstrap = DefaultBootstrap.create(this);
     }
 
-    protected Bootstrap getBootstrap() {
+    public Bootstrap getBootstrap() {
         return bootstrap;
     }
 }

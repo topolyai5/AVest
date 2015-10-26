@@ -19,7 +19,7 @@ public abstract class VestRequestListener<T> { //implements RequestListener<T> {
         return context;
     }
 
-    protected Bootstrap getBootstrap() {
+    public Bootstrap getBootstrap() {
         return bootstrap;
     }
 

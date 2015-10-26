@@ -20,7 +20,7 @@ public class VestSupportMapFragment extends SupportMapFragment {
         return super.onCreateView(inflater, container, savedInstanceState);
     }
 
-    protected Bootstrap getBootstrap() {
+    public Bootstrap getBootstrap() {
         return bootstrap;
     }
 }

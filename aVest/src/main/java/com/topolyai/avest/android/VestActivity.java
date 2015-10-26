@@ -15,7 +15,7 @@ public class VestActivity extends Activity {
         bootstrap = DefaultBootstrap.create(this);
     }
 
-    protected Bootstrap getBootstrap() {
+    public Bootstrap getBootstrap() {
         return bootstrap;
     }
 }

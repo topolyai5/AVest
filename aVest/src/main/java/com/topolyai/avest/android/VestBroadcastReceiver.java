@@ -19,7 +19,7 @@ public abstract class VestBroadcastReceiver extends BroadcastReceiver {
 
     protected abstract void receive(Context context, Intent intent);
 
-    protected Bootstrap getBootstrap() {
+    public Bootstrap getBootstrap() {
         return bootstrap;
     }
 }

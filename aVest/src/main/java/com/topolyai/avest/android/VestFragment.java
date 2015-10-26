@@ -25,7 +25,7 @@ public class VestFragment extends Fragment {
         return layout;
     }
 
-    protected Bootstrap getBootstrap() {
+    public Bootstrap getBootstrap() {
         return bootstrap;
     }
 

@@ -19,7 +19,7 @@ public abstract class VestOnMarkerClickListener implements OnMarkerClickListener
         return context;
     }
 
-    protected Bootstrap getBootstrap() {
+    public Bootstrap getBootstrap() {
         return bootstrap;
     }
 

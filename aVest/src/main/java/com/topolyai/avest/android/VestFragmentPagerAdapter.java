@@ -15,7 +15,7 @@ public abstract class VestFragmentPagerAdapter extends FragmentPagerAdapter {
         bootstrap.registerObject(this, false);
     }
 
-    protected Bootstrap getBootstrap() {
+    public Bootstrap getBootstrap() {
         return bootstrap;
     }
 
