@@ -16,18 +16,22 @@ android {
         }
     }
 }
-def version = '0.1.3';
-task clearJar(type: Delete) {
-    delete 'build/outputs/avest-' + version + '.jar'
-}
 
 task makeJar(type: Copy) {
-    from('build/intermediates/bundles/release/')
-    into('build/outputs/')
-    include('classes.jar')
-    rename ('classes.jar', 'avest-' + version + '.jar')
-}
 
+    def artifact = "avest"
+    def group = "com.topolyai"
+    def version = "0.1.3"
+    def fileName = artifact + '-' + version + '.jar'
+
+    from('build/intermediates/bundles/release/')
+    def userHome = System.getProperty("user.home")
+    String outputDir = userHome + "/.m2/repository/" + group.replaceAll("\\.", '/') + File.separator + artifact + File.separator + version
+    into(outputDir)
+    include('classes.jar')
+    rename('classes.jar', fileName)
+
+}
 dependencies {
     compile 'com.android.support:support-v4:22.0.0'
     compile 'com.google.android.gms:play-services:7.3.0'
