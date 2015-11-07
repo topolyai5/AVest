@@ -34,6 +34,7 @@ import com.topolyai.avest.annotations.Layout;
 import com.topolyai.avest.annotations.PostConstruct;
 import com.topolyai.avest.annotations.ScreenElement;
 import com.topolyai.avest.annotations.Vest;
+import com.topolyai.vlogger.Logger;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
@@ -51,7 +52,7 @@ import dalvik.system.DexFile;
 
 class DefaultBootstrap implements Bootstrap {
 
-    String TAG = getClass().getName();
+    private static Logger LOGGER = Logger.get(DefaultBootstrap.class);
 
     Map<String, Object> objs = new HashMap<>();
     List<Object> configs = new ArrayList<>();
@@ -66,6 +67,7 @@ class DefaultBootstrap implements Bootstrap {
             inst = new DefaultBootstrap();
             inst.onCreate(context);
         } else {
+            LOGGER.d("New context was registered. %s", context.toString());
             inst.registerObject(context, true);
         }
         return inst;
@@ -79,6 +81,7 @@ class DefaultBootstrap implements Bootstrap {
     }
 
     public void onCreate(Context context) {
+        LOGGER.d("New context was started.");
         long start = System.currentTimeMillis();
         try {
             this.context = context;
@@ -91,12 +94,11 @@ class DefaultBootstrap implements Bootstrap {
             screenElements();
             postConstructs();
         } catch (Exception e) {
-            Log.e(TAG, e.getMessage(), e);
+            LOGGER.e(e.getMessage(), e);
             throw new FailedToInitializationException(e);
         }
         long end = System.currentTimeMillis();
-
-        Log.i(TAG, "inited: " + (end - start) + "ms.");
+        LOGGER.i("inited: %s ms.", (end - start));
     }
 
     private void screenElements() throws NoSuchFieldException, IllegalAccessException, IllegalArgumentException,
@@ -109,9 +111,10 @@ class DefaultBootstrap implements Bootstrap {
 
     private void injectViewOnScreenElement(Object element) throws NoSuchFieldException, IllegalAccessException,
             IllegalArgumentException, NoSuchMethodException, InvocationTargetException {
+        LOGGER.d("Inject views on screen element: %s", element.getClass().getName());
         Field[] fields = element.getClass().getDeclaredFields();
 
-        List<Field> injectView = new ArrayList<Field>();
+        List<Field> injectView = new ArrayList<>();
         View layout = null;
 
         for (Field field : fields) {
@@ -159,6 +162,7 @@ class DefaultBootstrap implements Bootstrap {
 
     private void findViewOnLayoutAndInject(Object element, View layout, Field field) throws NoSuchFieldException,
             IllegalAccessException {
+        LOGGER.d("Resolve views on element: %s", element.getClass().getName());
         InjectView annotation = field.getAnnotation(InjectView.class);
         View embeddedLayout = layout;
         if (!annotation.layout().isEmpty()) {
@@ -172,7 +176,7 @@ class DefaultBootstrap implements Bootstrap {
 
     private void fetchObjFromConfig() throws InstantiationException, IllegalAccessException, IllegalArgumentException,
             InvocationTargetException, ClassNotFoundException {
-
+        LOGGER.d("Fetch obj from configuration...");
         for (Object config : configs) {
             resolveDependencies(config);
             Class<?> clazz = config.getClass();
@@ -199,7 +203,7 @@ class DefaultBootstrap implements Bootstrap {
     }
 
     private void fetchSystemServices() {
-        System.out.println(context);
+        LOGGER.d("Fetch system services...");
         objs.put(LocationManager.class.getName(), context.getSystemService(Context.LOCATION_SERVICE));
         objs.put(LayoutInflater.class.getName(), context.getSystemService(Context.LAYOUT_INFLATER_SERVICE));
         objs.put(WifiManager.class.getName(), context.getSystemService(Context.WIFI_SERVICE));
@@ -221,6 +225,7 @@ class DefaultBootstrap implements Bootstrap {
 
     private void postConstructs() throws IllegalAccessException, IllegalArgumentException, InvocationTargetException,
             ClassNotFoundException {
+        LOGGER.d("Postconstructs...");
         //clone for temp. if new objects are created in post construct, need resolve the dependencies in these objects
         Map<String, Object> l = new HashMap<>();
         for (Entry<String, Object> object : objs.entrySet()) {
@@ -295,6 +300,7 @@ class DefaultBootstrap implements Bootstrap {
     }
 
     private void resolveDependencies(Object obj) throws IllegalAccessException, ClassNotFoundException {
+        LOGGER.d("Resolve dependencies in obj: %s", obj.getClass().getName());
         Field[] fields = obj.getClass().getDeclaredFields();
         walkOnFields(obj, fields);
     }
@@ -352,7 +358,7 @@ class DefaultBootstrap implements Bootstrap {
                 }
             }
         } catch (Exception e) {
-            Log.e(TAG, "Error", e);
+            LOGGER.e("Error", e);
         }
     }
 
@@ -361,7 +367,7 @@ class DefaultBootstrap implements Bootstrap {
     }
 
     public void registerObject(Object o, boolean withView) {
-
+        LOGGER.d("New obj was registered. Obj: %s, with view: %s", o.getClass().getName(), withView);
         try {
             objs.put(o.getClass().getName(), o);
             resolveDependencies(o);
