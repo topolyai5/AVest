@@ -16,6 +16,7 @@ import android.os.Vibrator;
 import android.support.v4.app.DialogFragment;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -66,6 +67,8 @@ class DefaultBootstrap implements Bootstrap {
         if (inst == null) {
             inst = new DefaultBootstrap();
             inst.onCreate(context);
+        } else if (inst.context.equals(context)) {
+            //ignore
         } else {
             LOGGER.d("New context was registered. %s", context.toString());
             inst.registerObject(context, true);
@@ -377,7 +380,7 @@ class DefaultBootstrap implements Bootstrap {
             }
             invokePostConstruct(o);
         } catch (IllegalAccessException | NoSuchFieldException | IllegalArgumentException | InvocationTargetException | ClassNotFoundException e) {
-            Log.e("asd", e.getMessage(), e);
+            LOGGER.e(e.getMessage(), e);
         }
     }
 
@@ -406,7 +409,15 @@ class DefaultBootstrap implements Bootstrap {
             activity(o);
             injectViewOnScreenElement(o);
         } catch (NoSuchMethodException | NoSuchFieldException | IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
-            Log.e("asd", e.getMessage(), e);
+            String msg;
+            if (!TextUtils.isEmpty(e.getMessage())) {
+                msg = e.getMessage();
+            } else if (e.getCause() != null && !TextUtils.isEmpty(e.getCause().getMessage())) {
+                msg = e.getCause().getMessage();
+            } else {
+                msg = "Unexpected error, see stacktrace.";
+            }
+            LOGGER.e(msg, e);
         }
     }
 
