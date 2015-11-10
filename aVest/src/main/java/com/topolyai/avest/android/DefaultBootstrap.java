@@ -168,7 +168,7 @@ class DefaultBootstrap implements Bootstrap {
         LOGGER.d("Resolve views on element: %s", element.getClass().getName());
         InjectView annotation = field.getAnnotation(InjectView.class);
         View embeddedLayout = layout;
-        if (!annotation.layout().isEmpty()) {
+        if (!TextUtils.isEmpty(annotation.layout())) {
             Field f = element.getClass().getDeclaredField(annotation.layout());
             f.setAccessible(true);
             embeddedLayout = (View) f.get(element);
@@ -314,7 +314,7 @@ class DefaultBootstrap implements Bootstrap {
             if (annotation != null) {
                 Class<?> type = field.getType();
                 Object object = null;
-                if (!annotation.value().isEmpty()) {
+                if (!TextUtils.isEmpty(annotation.value())) {
                     object = objs.get(annotation.value());
                 }
                 if (object == null) {
@@ -409,15 +409,7 @@ class DefaultBootstrap implements Bootstrap {
             activity(o);
             injectViewOnScreenElement(o);
         } catch (NoSuchMethodException | NoSuchFieldException | IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
-            String msg;
-            if (!TextUtils.isEmpty(e.getMessage())) {
-                msg = e.getMessage();
-            } else if (e.getCause() != null && !TextUtils.isEmpty(e.getCause().getMessage())) {
-                msg = e.getCause().getMessage();
-            } else {
-                msg = "Unexpected error, see stacktrace.";
-            }
-            LOGGER.e(msg, e);
+            LOGGER.e(e.getMessage(), e);
         }
     }
 
