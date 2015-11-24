@@ -70,7 +70,7 @@ class DefaultBootstrap implements Bootstrap {
         } else if (inst.context.equals(context)) {
             //ignore
         } else {
-            LOGGER.d("New context was registered. %s", context.toString());
+            LOGGER.d("New context was registered. {}", context.toString());
             inst.registerObject(context, true);
         }
         return inst;
@@ -101,7 +101,7 @@ class DefaultBootstrap implements Bootstrap {
             throw new FailedToInitializationException(e);
         }
         long end = System.currentTimeMillis();
-        LOGGER.i("inited: %s ms.", (end - start));
+        LOGGER.i("inited: {} ms.", (end - start));
     }
 
     private void screenElements() throws NoSuchFieldException, IllegalAccessException, IllegalArgumentException,
@@ -114,7 +114,7 @@ class DefaultBootstrap implements Bootstrap {
 
     private void injectViewOnScreenElement(Object element) throws NoSuchFieldException, IllegalAccessException,
             IllegalArgumentException, NoSuchMethodException, InvocationTargetException {
-        LOGGER.d("Inject views on screen element: %s", element.getClass().getName());
+        LOGGER.d("Inject views on screen element: {}", element.getClass().getName());
         Field[] fields = element.getClass().getDeclaredFields();
 
         List<Field> injectView = new ArrayList<>();
@@ -165,7 +165,7 @@ class DefaultBootstrap implements Bootstrap {
 
     private void findViewOnLayoutAndInject(Object element, View layout, Field field) throws NoSuchFieldException,
             IllegalAccessException {
-        LOGGER.d("Resolve views on element: %s", element.getClass().getName());
+        LOGGER.d("Resolve views on element: {}", element.getClass().getName());
         InjectView annotation = field.getAnnotation(InjectView.class);
         View embeddedLayout = layout;
         if (!TextUtils.isEmpty(annotation.layout())) {
@@ -303,7 +303,7 @@ class DefaultBootstrap implements Bootstrap {
     }
 
     private void resolveDependencies(Object obj) throws IllegalAccessException, ClassNotFoundException {
-        LOGGER.d("Resolve dependencies in obj: %s", obj.getClass().getName());
+        LOGGER.d("Resolve dependencies in obj: {}", obj.getClass().getName());
         Field[] fields = obj.getClass().getDeclaredFields();
         walkOnFields(obj, fields);
     }
@@ -343,7 +343,7 @@ class DefaultBootstrap implements Bootstrap {
                     try {
                         class1 = Class.forName(s);
                     } catch (ClassNotFoundException e) {
-                        System.out.println("class is not loaded: " + s);
+                        LOGGER.w("class is not loaded: " + s);
                         class1 = df.loadClass(s, Thread.currentThread().getContextClassLoader());
                     }
                     for (Annotation ann : class1.getAnnotations()) {
@@ -370,7 +370,7 @@ class DefaultBootstrap implements Bootstrap {
     }
 
     public void registerObject(Object o, boolean withView) {
-        LOGGER.d("New obj was registered. Obj: %s, with view: %s", o.getClass().getName(), withView);
+        LOGGER.d("New obj was registered. Obj: {}, with view: {}", o.getClass().getName(), withView);
         try {
             objs.put(o.getClass().getName(), o);
             resolveDependencies(o);
