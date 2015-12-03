@@ -21,7 +21,7 @@ task makeJar(type: Copy) {
 
     def artifact = "avest"
     def group = "com.topolyai"
-    def version = "0.1.4"
+    def version = "0.1.5"
     def fileName = artifact + '-' + version + '.jar'
 
     from('build/intermediates/bundles/release/')

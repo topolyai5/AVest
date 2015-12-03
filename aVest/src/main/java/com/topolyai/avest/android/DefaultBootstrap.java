@@ -17,7 +17,6 @@ import android.support.v4.app.DialogFragment;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.text.TextUtils;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.WindowManager;
@@ -314,8 +313,8 @@ class DefaultBootstrap implements Bootstrap {
             if (annotation != null) {
                 Class<?> type = field.getType();
                 Object object = null;
-                if (!TextUtils.isEmpty(annotation.value())) {
-                    object = objs.get(annotation.value());
+                if (!annotation.value().equals(Object.class)) {
+                    object = objs.get(annotation.value().getName());
                 }
                 if (object == null) {
                     if (type.isInstance(context)) {
@@ -327,10 +326,23 @@ class DefaultBootstrap implements Bootstrap {
                         object = objs.get(type.getName());
                     }
                 }
+
+                if (object == null) {
+                    object = findAsSuperClass(type);
+                }
                 field.setAccessible(true);
                 field.set(obj, object);
             }
         }
+    }
+
+    private Object findAsSuperClass(Class<?> type) {
+        for (Object o : objs.values()) {
+            if (type.isInstance(o)) {
+                return o;
+            }
+        }
+        return null;
     }
 
     private void createObjects() {
@@ -373,7 +385,7 @@ class DefaultBootstrap implements Bootstrap {
         LOGGER.d("New obj was registered. Obj: {}, with view: {}", o.getClass().getName(), withView);
         try {
             objs.put(o.getClass().getName(), o);
-            resolveDependencies(o);
+            resolveDependenciesInSuperClass(o);
             injectObjectWhereDependency(o);
             if (withView) {
                 injectViews(o);
