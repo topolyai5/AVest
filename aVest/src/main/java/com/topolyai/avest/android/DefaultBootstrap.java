@@ -135,8 +135,8 @@ class DefaultBootstrap implements Bootstrap {
                         injectView.add(field);
                     }
                 } else if (annotation.annotationType().equals(EmbeddedLayout.class)) {
-                    View embeddedLayout = LayoutInflater.from(context).inflate(field.getAnnotation(EmbeddedLayout.class).value(),
-                            null);
+                    View embeddedLayout = LayoutInflater.from(context)
+                            .inflate(field.getAnnotation(EmbeddedLayout.class).value(), null);
                     setFieldValue(element, field, embeddedLayout);
                 }
             }
@@ -154,7 +154,7 @@ class DefaultBootstrap implements Bootstrap {
             }
         }
         if (layout == null && !injectView.isEmpty()) {
-            throw new NullPointerException("Layout is not defined in " + element.getClass().getName());
+            LOGGER.w("Layout is not defined in " + element.getClass().getName());
         }
         for (Field field : injectView) {
             findViewOnLayoutAndInject(element, layout, field);
@@ -312,26 +312,41 @@ class DefaultBootstrap implements Bootstrap {
             Inject annotation = field.getAnnotation(Inject.class);
             if (annotation != null) {
                 Class<?> type = field.getType();
-                Object object = null;
-                if (!annotation.value().equals(Object.class)) {
-                    object = objs.get(annotation.value().getName());
-                }
-                if (object == null) {
-                    if (type.isInstance(context)) {
-                        type = Class.forName("android.content.Context");
-                        object = objs.get(type.getName());
-                    } else if (FragmentManager.class.equals(type) && context instanceof VestFragmentActivity) {
-                        object = ((VestFragmentActivity) context).getSupportFragmentManager();
-                    } else {
-                        object = objs.get(type.getName());
+                if (type.equals(List.class)) {
+                    field.setAccessible(true);
+                    if (annotation.value() == null) {
+                        throw new IllegalArgumentException("Super class should be set.");
                     }
-                }
+                    field.set(obj, findAllAsSuperClass(annotation.value()));
+                }else if (type.equals(Map.class)) {
+                    field.setAccessible(true);
+                    if (annotation.value() == null) {
+                        throw new IllegalArgumentException("Super class should be set.");
+                    }
+                    field.set(obj, findAllAsSuperClassInMap(annotation.value()));
+                } else {
+                    Object object = null;
+                    if (!annotation.value().equals(Object.class)) {
+                        object = objs.get(annotation.value().getName());
+                    }
+                    if (object == null) {
+                        if (type.isInstance(context)) {
+                            type = Class.forName("android.content.Context");
+                            object = objs.get(type.getName());
+                        } else if (FragmentManager.class.equals(type) && context instanceof VestFragmentActivity) {
+                            object = ((VestFragmentActivity) context).getSupportFragmentManager();
+                        } else {
+                            object = objs.get(type.getName());
+                        }
+                    }
 
-                if (object == null) {
-                    object = findAsSuperClass(type);
+                    if (object == null) {
+                        object = findAsSuperClass(type);
+                    }
+
+                    field.setAccessible(true);
+                    field.set(obj, object);
                 }
-                field.setAccessible(true);
-                field.set(obj, object);
             }
         }
     }
@@ -343,6 +358,26 @@ class DefaultBootstrap implements Bootstrap {
             }
         }
         return null;
+    }
+
+    private List<Object> findAllAsSuperClass(Class<?> type) {
+        List<Object> ret = new ArrayList<>();
+        for (Object o : objs.values()) {
+            if (type.isInstance(o)) {
+                ret.add(o);
+            }
+        }
+        return ret;
+    }
+
+    private Map<Class<?>, Object> findAllAsSuperClassInMap(Class<?> type) {
+        Map<Class<?>, Object> ret = new HashMap<>();
+        for (Object o : objs.values()) {
+            if (type.isInstance(o)) {
+                ret.put(o.getClass(), o);
+            }
+        }
+        return ret;
     }
 
     private void createObjects() {
