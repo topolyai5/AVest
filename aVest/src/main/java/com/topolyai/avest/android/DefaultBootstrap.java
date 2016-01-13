@@ -7,6 +7,7 @@ import android.app.KeyguardManager;
 import android.app.NotificationManager;
 import android.app.SearchManager;
 import android.app.UiModeManager;
+import android.bluetooth.BluetoothManager;
 import android.content.Context;
 import android.location.LocationManager;
 import android.net.ConnectivityManager;
@@ -220,6 +221,7 @@ class DefaultBootstrap implements Bootstrap {
         objs.put(ConnectivityManager.class.getName(), context.getSystemService(Context.CONNECTIVITY_SERVICE));
         objs.put(InputMethodManager.class.getName(), context.getSystemService(Context.INPUT_METHOD_SERVICE));
         objs.put(UiModeManager.class.getName(), context.getSystemService(Context.UI_MODE_SERVICE));
+        objs.put(BluetoothManager.class.getName(), context.getSystemService(Context.BLUETOOTH_SERVICE));
         // objs.put(DownloadManager.class.getName(),
         // context.getSystemService(DOWNLOAD_SERVICE));
 

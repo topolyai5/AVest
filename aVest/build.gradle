@@ -15,6 +15,9 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.txt'
         }
     }
+    lintOptions {
+        abortOnError false
+    }
 }
 
 task makeJar(type: Copy) {
@@ -34,6 +37,7 @@ task makeJar(type: Copy) {
 }
 dependencies {
     compile 'com.android.support:support-v4:23.0.1'
+    compile 'com.android.support:appcompat-v7:23.0.1'
     compile 'com.google.android.gms:play-services:8.3.0'
     compile 'com.topolyai:vlogger:0.1.0'
 }
