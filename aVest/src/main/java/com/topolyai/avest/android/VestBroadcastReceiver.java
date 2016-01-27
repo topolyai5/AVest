@@ -12,8 +12,12 @@ public abstract class VestBroadcastReceiver extends BroadcastReceiver {
 
     @Override
     public void onReceive(Context context, Intent intent) {
-        bootstrap = DefaultBootstrap.create(context);
-        bootstrap.registerObject(this, false);
+        try {
+            bootstrap = DefaultBootstrap.get();
+            bootstrap.registerObject(this, false);
+        } catch (Exception e) {
+            //ignore
+        }
         receive(context, intent);
     }
 

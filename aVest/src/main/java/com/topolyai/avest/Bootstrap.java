@@ -10,6 +10,8 @@ public interface Bootstrap {
      */
     void registerObject(Object obj);
 
+    boolean resolveDependencies(Object obj);
+
     <T> void unregisterClass(Class<T> clazz);
 
     <T> T getVest(String name, Class<T> clazz);

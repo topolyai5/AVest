@@ -33,6 +33,7 @@ import com.topolyai.avest.annotations.Inject;
 import com.topolyai.avest.annotations.InjectView;
 import com.topolyai.avest.annotations.Layout;
 import com.topolyai.avest.annotations.PostConstruct;
+import com.topolyai.avest.annotations.Prototype;
 import com.topolyai.avest.annotations.ScreenElement;
 import com.topolyai.avest.annotations.Vest;
 import com.topolyai.vlogger.Logger;
@@ -45,9 +46,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import dalvik.system.DexFile;
 
@@ -56,6 +59,7 @@ class DefaultBootstrap implements Bootstrap {
     private static Logger LOGGER = Logger.get(DefaultBootstrap.class);
 
     Map<String, Object> objs = new HashMap<>();
+    Set<Class> prototypes = new HashSet<>();
     List<Object> configs = new ArrayList<>();
     List<Object> screenElements = new ArrayList<>();
 
@@ -92,6 +96,7 @@ class DefaultBootstrap implements Bootstrap {
             createObjects();
             fetchObjFromConfig();
             fetchSystemServices();
+            resolveAwares();
             injectDependecies();
             activity(context);
             screenElements();
@@ -102,6 +107,14 @@ class DefaultBootstrap implements Bootstrap {
         }
         long end = System.currentTimeMillis();
         LOGGER.i("inited: {} ms.", (end - start));
+    }
+
+    private void resolveAwares() {
+        for (Object o : objs.values()) {
+            if (o instanceof BootsrapAware) {
+                ((BootsrapAware) o).setBootstrap(this);
+            }
+        }
     }
 
     private void screenElements() throws NoSuchFieldException, IllegalAccessException, IllegalArgumentException,
@@ -181,7 +194,7 @@ class DefaultBootstrap implements Bootstrap {
             InvocationTargetException, ClassNotFoundException {
         LOGGER.d("Fetch obj from configuration...");
         for (Object config : configs) {
-            resolveDependencies(config);
+            internalResolveDependencies(config);
             Class<?> clazz = config.getClass();
             Field[] fields = clazz.getDeclaredFields();
             for (Field field : fields) {
@@ -228,7 +241,7 @@ class DefaultBootstrap implements Bootstrap {
     }
 
     private void postConstructs() throws IllegalAccessException, IllegalArgumentException, InvocationTargetException,
-            ClassNotFoundException {
+            ClassNotFoundException, InstantiationException {
         LOGGER.d("Postconstructs...");
         //clone for temp. if new objects are created in post construct, need resolve the dependencies in these objects
         Map<String, Object> l = new HashMap<>();
@@ -255,7 +268,7 @@ class DefaultBootstrap implements Bootstrap {
 
         if (!l2.isEmpty()) {
             for (Object object : l2.values()) {
-                resolveDependencies(object);
+                internalResolveDependencies(object);
                 invokePostConstruct(object);
             }
         }
@@ -272,17 +285,17 @@ class DefaultBootstrap implements Bootstrap {
         }
     }
 
-    private void injectDependecies() throws IllegalAccessException, IllegalArgumentException, ClassNotFoundException {
+    private void injectDependecies() throws IllegalAccessException, IllegalArgumentException, ClassNotFoundException, InstantiationException {
         for (Object obj : objs.values()) {
             if (obj.getClass().getAnnotation(Component.class) != null) {
                 resolveDependenciesInSuperClass(obj);
             } else {
-                resolveDependencies(obj);
+                internalResolveDependencies(obj);
             }
         }
     }
 
-    private void resolveDependenciesInSuperClass(Object o) throws ClassNotFoundException, IllegalAccessException {
+    private void resolveDependenciesInSuperClass(Object o) throws ClassNotFoundException, IllegalAccessException, InstantiationException {
         walkOnFields(o, getAllFields(o.getClass()));
     }
 
@@ -303,13 +316,13 @@ class DefaultBootstrap implements Bootstrap {
         return result;
     }
 
-    private void resolveDependencies(Object obj) throws IllegalAccessException, ClassNotFoundException {
+    private void internalResolveDependencies(Object obj) throws IllegalAccessException, ClassNotFoundException, InstantiationException {
         LOGGER.d("Resolve dependencies in obj: {}", obj.getClass().getName());
         Field[] fields = obj.getClass().getDeclaredFields();
         walkOnFields(obj, fields);
     }
 
-    private void walkOnFields(Object obj, Field[] fields) throws ClassNotFoundException, IllegalAccessException {
+    private void walkOnFields(Object obj, Field[] fields) throws ClassNotFoundException, IllegalAccessException, InstantiationException {
         for (Field field : fields) {
             Inject annotation = field.getAnnotation(Inject.class);
             if (annotation != null) {
@@ -320,12 +333,14 @@ class DefaultBootstrap implements Bootstrap {
                         throw new IllegalArgumentException("Super class should be set.");
                     }
                     field.set(obj, findAllAsSuperClass(annotation.value()));
-                }else if (type.equals(Map.class)) {
+                } else if (type.equals(Map.class)) {
                     field.setAccessible(true);
                     if (annotation.value() == null) {
                         throw new IllegalArgumentException("Super class should be set.");
                     }
                     field.set(obj, findAllAsSuperClassInMap(annotation.value()));
+                } else if (prototypes.contains(type)) {
+                    field.set(obj, resolveDependencies(type.newInstance()));
                 } else {
                     Object object = null;
                     if (!annotation.value().equals(Object.class)) {
@@ -405,6 +420,8 @@ class DefaultBootstrap implements Bootstrap {
                             Object o = class1.newInstance();
                             objs.put(class1.getName(), o);
                             screenElements.add(o);
+                        } else if (ann.annotationType().equals(Prototype.class)) {
+                            prototypes.add(class1);
                         }
                     }
                 }
@@ -428,7 +445,7 @@ class DefaultBootstrap implements Bootstrap {
                 injectViews(o);
             }
             invokePostConstruct(o);
-        } catch (IllegalAccessException | NoSuchFieldException | IllegalArgumentException | InvocationTargetException | ClassNotFoundException e) {
+        } catch (IllegalAccessException | NoSuchFieldException | IllegalArgumentException | InvocationTargetException | ClassNotFoundException | InstantiationException e) {
             LOGGER.e(e.getMessage(), e);
         }
     }
@@ -436,6 +453,17 @@ class DefaultBootstrap implements Bootstrap {
     @Override
     public void registerObject(Object obj) {
         registerObject(obj, false);
+    }
+
+    @Override
+    public boolean resolveDependencies(Object obj) {
+        try {
+            internalResolveDependencies(obj);
+            return true;
+        } catch (IllegalAccessException | ClassNotFoundException | InstantiationException e) {
+            LOGGER.e(e.getMessage(), e);
+        }
+        return false;
     }
 
     @Override
@@ -519,6 +547,7 @@ class DefaultBootstrap implements Bootstrap {
         objs.clear();
         screenElements.clear();
         configs.clear();
+        prototypes.clear();
 
         objs = null;
         screenElements = null;

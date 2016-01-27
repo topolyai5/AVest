@@ -4,3 +4,4 @@
 .gradle/*
 **/aVest.iml
 **/local.properties
+*.iml
