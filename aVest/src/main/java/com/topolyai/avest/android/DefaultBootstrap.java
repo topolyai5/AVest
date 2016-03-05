@@ -70,7 +70,7 @@ class DefaultBootstrap implements Bootstrap {
     public static Bootstrap create(Context context) {
         if (inst == null) {
             inst = new DefaultBootstrap();
-            inst.onCreate(context);
+            inst.onCreate(context, true);
         } else if (inst.context.equals(context)) {
             //ignore
         } else {
@@ -87,19 +87,22 @@ class DefaultBootstrap implements Bootstrap {
         return inst;
     }
 
-    public void onCreate(Context context) {
+    public void onCreate(Context context, boolean resolveViews) {
         LOGGER.d("New context was started.");
         long start = System.currentTimeMillis();
         try {
             this.context = context;
+            AVestCofigure.registerPackage(getAppPackageName());
             objs.put(Context.class.getName(), context);
-            createObjects();
+            createObjects(resolveViews);
             fetchObjFromConfig();
             fetchSystemServices();
             resolveAwares();
             injectDependecies();
-            activity(context);
-            screenElements();
+            if (resolveViews) {
+                activity(context);
+                screenElements();
+            }
             postConstructs();
         } catch (Exception e) {
             LOGGER.e(e.getMessage(), e);
@@ -111,28 +114,30 @@ class DefaultBootstrap implements Bootstrap {
 
     private void resolveAwares() {
         for (Object o : objs.values()) {
-            if (o instanceof BootsrapAware) {
-                ((BootsrapAware) o).setBootstrap(this);
-            }
+            resolveAwares(o);
         }
     }
 
-    private void screenElements() throws NoSuchFieldException, IllegalAccessException, IllegalArgumentException,
-            NoSuchMethodException, InvocationTargetException {
+    private void resolveAwares(Object o) {
+        if (o instanceof BootsrapAware) {
+            ((BootsrapAware) o).setBootstrap(this);
+        }
+    }
+
+    private void screenElements() throws NoSuchFieldException, IllegalAccessException, IllegalArgumentException, NoSuchMethodException, InvocationTargetException {
         for (Object element : screenElements) {
             injectViewOnScreenElement(element);
         }
         screenElements.clear();
     }
 
-    private void injectViewOnScreenElement(Object element) throws NoSuchFieldException, IllegalAccessException,
-            IllegalArgumentException, NoSuchMethodException, InvocationTargetException {
+    private void injectViewOnScreenElement(Object element) throws NoSuchFieldException, IllegalAccessException, IllegalArgumentException, NoSuchMethodException, InvocationTargetException {
         LOGGER.d("Inject views on screen element: {}", element.getClass().getName());
-        Field[] fields = element.getClass().getDeclaredFields();
+        Field[] fields = getAllFields(element.getClass());
 
         List<Field> injectView = new ArrayList<>();
         View layout = null;
-
+        boolean hasEmbeddedLayout = false;
         for (Field field : fields) {
             for (Annotation annotation : field.getAnnotations()) {
                 if (annotation.annotationType().equals(Layout.class)) {
@@ -149,6 +154,7 @@ class DefaultBootstrap implements Bootstrap {
                         injectView.add(field);
                     }
                 } else if (annotation.annotationType().equals(EmbeddedLayout.class)) {
+                    hasEmbeddedLayout = true;
                     View embeddedLayout = LayoutInflater.from(context)
                             .inflate(field.getAnnotation(EmbeddedLayout.class).value(), null);
                     setFieldValue(element, field, embeddedLayout);
@@ -167,7 +173,9 @@ class DefaultBootstrap implements Bootstrap {
 
             }
         }
-        if (layout == null && !injectView.isEmpty()) {
+        if (hasEmbeddedLayout) {
+            LOGGER.i("Layout is not defined in " + element.getClass().getName());
+        } else if (layout == null && !injectView.isEmpty()) {
             LOGGER.w("Layout is not defined in " + element.getClass().getName());
         }
         for (Field field : injectView) {
@@ -176,13 +184,12 @@ class DefaultBootstrap implements Bootstrap {
 
     }
 
-    private void findViewOnLayoutAndInject(Object element, View layout, Field field) throws NoSuchFieldException,
-            IllegalAccessException {
+    private void findViewOnLayoutAndInject(Object element, View layout, Field field) throws NoSuchFieldException, IllegalAccessException {
         LOGGER.d("Resolve views on element: {}", element.getClass().getName());
         InjectView annotation = field.getAnnotation(InjectView.class);
         View embeddedLayout = layout;
         if (!TextUtils.isEmpty(annotation.layout())) {
-            Field f = element.getClass().getDeclaredField(annotation.layout());
+            Field f = getField(element.getClass(), annotation.layout());
             f.setAccessible(true);
             embeddedLayout = (View) f.get(element);
         }
@@ -190,11 +197,23 @@ class DefaultBootstrap implements Bootstrap {
         setFieldValue(element, field, view);
     }
 
-    private void fetchObjFromConfig() throws InstantiationException, IllegalAccessException, IllegalArgumentException,
-            InvocationTargetException, ClassNotFoundException {
+    private Field getField(Class<?> clss, String name) throws NoSuchFieldException {
+        try {
+            return clss.getDeclaredField(name);
+        } catch (NoSuchFieldException e) {
+            if (clss.getSuperclass().isInstance(Object.class)) {
+                throw e;
+            } else {
+                return getField(clss.getSuperclass(), name);
+            }
+        }
+
+    }
+
+    private void fetchObjFromConfig() throws InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, ClassNotFoundException {
         LOGGER.d("Fetch obj from configuration...");
         for (Object config : configs) {
-            internalResolveDependencies(config);
+            resolveDependenciesInSuperClassAsWell(config);
             Class<?> clazz = config.getClass();
             Field[] fields = clazz.getDeclaredFields();
             for (Field field : fields) {
@@ -240,8 +259,7 @@ class DefaultBootstrap implements Bootstrap {
 
     }
 
-    private void postConstructs() throws IllegalAccessException, IllegalArgumentException, InvocationTargetException,
-            ClassNotFoundException, InstantiationException {
+    private void postConstructs() throws IllegalAccessException, IllegalArgumentException, InvocationTargetException, ClassNotFoundException, InstantiationException {
         LOGGER.d("Postconstructs...");
         //clone for temp. if new objects are created in post construct, need resolve the dependencies in these objects
         Map<String, Object> l = new HashMap<>();
@@ -268,7 +286,7 @@ class DefaultBootstrap implements Bootstrap {
 
         if (!l2.isEmpty()) {
             for (Object object : l2.values()) {
-                internalResolveDependencies(object);
+                resolveDependenciesInSuperClassAsWell(object);
                 invokePostConstruct(object);
             }
         }
@@ -287,15 +305,11 @@ class DefaultBootstrap implements Bootstrap {
 
     private void injectDependecies() throws IllegalAccessException, IllegalArgumentException, ClassNotFoundException, InstantiationException {
         for (Object obj : objs.values()) {
-            if (obj.getClass().getAnnotation(Component.class) != null) {
-                resolveDependenciesInSuperClass(obj);
-            } else {
-                internalResolveDependencies(obj);
-            }
+            resolveDependenciesInSuperClassAsWell(obj);
         }
     }
 
-    private void resolveDependenciesInSuperClass(Object o) throws ClassNotFoundException, IllegalAccessException, InstantiationException {
+    private void resolveDependenciesInSuperClassAsWell(Object o) throws ClassNotFoundException, IllegalAccessException, InstantiationException {
         walkOnFields(o, getAllFields(o.getClass()));
     }
 
@@ -314,12 +328,6 @@ class DefaultBootstrap implements Bootstrap {
         T[] result = Arrays.copyOf(first, first.length + second.length);
         System.arraycopy(second, 0, result, first.length, second.length);
         return result;
-    }
-
-    private void internalResolveDependencies(Object obj) throws IllegalAccessException, ClassNotFoundException, InstantiationException {
-        LOGGER.d("Resolve dependencies in obj: {}", obj.getClass().getName());
-        Field[] fields = obj.getClass().getDeclaredFields();
-        walkOnFields(obj, fields);
     }
 
     private void walkOnFields(Object obj, Field[] fields) throws ClassNotFoundException, IllegalAccessException, InstantiationException {
@@ -397,12 +405,12 @@ class DefaultBootstrap implements Bootstrap {
         return ret;
     }
 
-    private void createObjects() {
+    private void createObjects(boolean resolveViews) {
         try {
             DexFile df = new DexFile(context.getPackageCodePath());
             for (Enumeration<String> iter = df.entries(); iter.hasMoreElements(); ) {
                 String s = iter.nextElement();
-                if (s.startsWith(getAppPackageName())) {
+                if (AVestCofigure.get().registeredPacakge(s)) {
                     Class<?> class1 = null;
                     try {
                         class1 = Class.forName(s);
@@ -416,7 +424,7 @@ class DefaultBootstrap implements Bootstrap {
                             objs.put(class1.getName(), o);
                         } else if (ann.annotationType().equals(Configuration.class)) {
                             configs.add(class1.newInstance());
-                        } else if (ann.annotationType().equals(ScreenElement.class)) {
+                        } else if (ann.annotationType().equals(ScreenElement.class) && resolveViews) {
                             Object o = class1.newInstance();
                             objs.put(class1.getName(), o);
                             screenElements.add(o);
@@ -439,7 +447,7 @@ class DefaultBootstrap implements Bootstrap {
         LOGGER.d("New obj was registered. Obj: {}, with view: {}", o.getClass().getName(), withView);
         try {
             objs.put(o.getClass().getName(), o);
-            resolveDependenciesInSuperClass(o);
+            resolveDependenciesInSuperClassAsWell(o);
             injectObjectWhereDependency(o);
             if (withView) {
                 injectViews(o);
@@ -458,7 +466,8 @@ class DefaultBootstrap implements Bootstrap {
     @Override
     public boolean resolveDependencies(Object obj) {
         try {
-            internalResolveDependencies(obj);
+            resolveDependenciesInSuperClassAsWell(obj);
+            resolveAwares(obj);
             return true;
         } catch (IllegalAccessException | ClassNotFoundException | InstantiationException e) {
             LOGGER.e(e.getMessage(), e);
@@ -473,7 +482,7 @@ class DefaultBootstrap implements Bootstrap {
 
     private void injectObjectWhereDependency(Object o) throws IllegalAccessException, ClassNotFoundException, NoSuchFieldException {
         for (Object entry : objs.values()) {
-            for (Field field : entry.getClass().getDeclaredFields()) {
+            for (Field field : getAllFields(entry.getClass())) {
                 if (field.getAnnotation(Inject.class) != null && field.getType().isInstance(o)) {
                     setFieldValue(entry, field, o);
                 }
@@ -509,8 +518,7 @@ class DefaultBootstrap implements Bootstrap {
         }
     }
 
-    private void setLayout(Object o, Class<?> clazz, Layout layout) throws NoSuchMethodException, IllegalAccessException,
-            InvocationTargetException, NoSuchFieldException {
+    private void setLayout(Object o, Class<?> clazz, Layout layout) throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, NoSuchFieldException {
         if (o instanceof Activity) {
             Method method = clazz.getMethod("setContentView", int.class);
             method.invoke(o, layout.value());
@@ -525,8 +533,7 @@ class DefaultBootstrap implements Bootstrap {
         }
     }
 
-    public void setFieldValue(Object o, Field field, Object value) throws NoSuchFieldException, IllegalAccessException,
-            IllegalArgumentException {
+    public void setFieldValue(Object o, Field field, Object value) throws NoSuchFieldException, IllegalAccessException, IllegalArgumentException {
         field.setAccessible(true);
         field.set(o, value);
     }
@@ -552,6 +559,12 @@ class DefaultBootstrap implements Bootstrap {
         objs = null;
         screenElements = null;
         configs = null;
+    }
+
+    public static Bootstrap temporaryContext(Context context, boolean resolveViews) {
+        DefaultBootstrap ret = new DefaultBootstrap();
+        ret.onCreate(context, resolveViews);
+        return ret;
     }
 
 }
