@@ -23,26 +23,11 @@ android {
 
 }
 
-task makeJar(type: Copy) {
-
-    def artifact = "avest"
-    def group = "com.topolyai"
-    def version = "0.1.5"
-    def fileName = artifact + '-' + version + '.jar'
-
-    from('build/intermediates/bundles/release/')
-    def userHome = System.getProperty("user.home")
-    String outputDir = userHome + "/.m2/repository/" + group.replaceAll("\\.", '/') + File.separator + artifact + File.separator + version
-    into(outputDir)
-    include('classes.jar')
-    rename('classes.jar', fileName)
-
-}
 dependencies {
     compile 'com.android.support:support-v4:23.0.1'
     compile 'com.android.support:appcompat-v7:23.0.1'
     compile 'com.google.android.gms:play-services:8.3.0'
-    compile 'com.topolyai:vlogger:0.1.1'
+    compile 'com.topolyai:vLogger:0.2.0@aar'
     provided 'org.projectlombok:lombok:1.12.6'
 }
 
