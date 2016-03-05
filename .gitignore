@@ -2,6 +2,6 @@
 **/build/*
 */.gradle/*
 .gradle/*
-**/aVest.iml
+gradle/*
 **/local.properties
 *.iml
