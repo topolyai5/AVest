@@ -24,10 +24,10 @@ android {
 }
 
 dependencies {
-    compile 'com.android.support:support-v4:23.0.1'
-    compile 'com.android.support:appcompat-v7:23.0.1'
-    compile 'com.google.android.gms:play-services:8.3.0'
-    compile 'com.topolyai:vLogger:0.2.0@aar'
+    provided 'com.android.support:support-v4:23.0.1'
+    provided 'com.android.support:appcompat-v7:23.0.1'
+    provided 'com.google.android.gms:play-services:8.3.0'
+    provided 'com.topolyai:vlogger:1.0.0@aar'
     provided 'org.projectlombok:lombok:1.12.6'
 }
 

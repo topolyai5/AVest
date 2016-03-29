@@ -11,7 +11,8 @@ public class AVestCofigure {
 
 
     public static void registerPackage(String p) {
-        get().packages.add(p);
+        AVestCofigure aVestCofigure = get();
+        aVestCofigure.packages.add(p);
     }
 
     static AVestCofigure get() {
