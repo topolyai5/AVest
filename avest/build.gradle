@@ -4,7 +4,7 @@ apply plugin: 'maven-publish'
 
 android {
     compileSdkVersion 23
-    buildToolsVersion "23.0.1"
+    buildToolsVersion "23.0.2"
 
     defaultConfig {
         minSdkVersion 14
@@ -24,11 +24,13 @@ android {
 }
 
 dependencies {
-    provided 'com.android.support:support-v4:23.0.1'
-    provided 'com.android.support:appcompat-v7:23.0.1'
-    provided 'com.google.android.gms:play-services:8.3.0'
-    provided 'com.topolyai:vlogger:1.0.0@aar'
+    provided 'com.android.support:support-v4:23.2.0'
+    provided 'com.android.support:appcompat-v7:23.2.0'
+    provided 'com.google.android.gms:play-services:8.4.0'
+
     provided 'org.projectlombok:lombok:1.12.6'
+
+    provided 'io.vlogger:vlogger:1.0.0'
 }
 
 

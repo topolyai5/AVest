@@ -1,6 +1,3 @@
-<manifest
-    package="com.topolyai.avest">
-
+<manifest package="io.avest">
     <application />
-
 </manifest>
