@@ -17,6 +17,7 @@ import android.os.Vibrator;
 import android.support.v4.app.DialogFragment;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
+import android.telephony.TelephonyManager;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -253,7 +254,8 @@ class DefaultBootstrap implements Bootstrap {
         objs.put(ConnectivityManager.class.getName(), context.getSystemService(Context.CONNECTIVITY_SERVICE));
         objs.put(InputMethodManager.class.getName(), context.getSystemService(Context.INPUT_METHOD_SERVICE));
         objs.put(UiModeManager.class.getName(), context.getSystemService(Context.UI_MODE_SERVICE));
-        objs.put(BluetoothManager.class.getName(), context.getSystemService(Context.BLUETOOTH_SERVICE));
+        objs.put(TelephonyManager.class.getName(), context.getSystemService(Context.TELEPHONY_SERVICE));
+
         // objs.put(DownloadManager.class.getName(),
         // context.getSystemService(DOWNLOAD_SERVICE));
 
@@ -540,12 +542,12 @@ class DefaultBootstrap implements Bootstrap {
 
     @Override
     public <T> T getVest(String name, Class<T> clazz) {
-        return clazz.cast(objs.get(name));
+        return clazz.cast(findAsSuperClass(clazz));
     }
 
     @Override
     public <T> T getVest(Class<T> clazz) {
-        return clazz.cast(objs.get(clazz.getName()));
+        return clazz.cast(findAsSuperClass(clazz));
     }
 
     @Override
