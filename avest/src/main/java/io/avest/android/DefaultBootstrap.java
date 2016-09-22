@@ -26,6 +26,7 @@ import android.view.inputmethod.InputMethodManager;
 import io.avest.Bootstrap;
 import io.avest.BootstrapNotInitializedException;
 import io.avest.FailedToInitializationException;
+import io.avest.RequriedFieldException;
 import io.avest.annotations.Component;
 import io.avest.annotations.Configuration;
 import io.avest.annotations.EmbeddedLayout;
@@ -194,6 +195,9 @@ class DefaultBootstrap implements Bootstrap {
             embeddedLayout = (View) f.get(element);
         }
         View view = embeddedLayout.findViewById(annotation.value());
+        if (view == null && annotation.required()) {
+            throw new RequriedFieldException(element.getClass(), field);
+        }
         setFieldValue(element, field, view);
     }
 
@@ -370,6 +374,23 @@ class DefaultBootstrap implements Bootstrap {
                         object = findAsSuperClass(type);
                     }
 
+                    if (object == null && annotation.required()) {
+                        Annotation[] annotations = field.getType().getAnnotations();
+
+                        boolean checkRequired = true;
+                        if (annotations != null) {
+                            for (Annotation fieldAnnotation : annotations) {
+                                if (fieldAnnotation.annotationType().equals(Layout.class) ||
+                                        fieldAnnotation.annotationType().equals(ScreenElement.class)) {
+                                    checkRequired = false;
+                                    break;
+                                }
+                            }
+                        }
+                        if (checkRequired) {
+                            throw new RequriedFieldException(obj.getClass(), field);
+                        }
+                    }
                     field.setAccessible(true);
                     field.set(obj, object);
                 }
@@ -416,8 +437,12 @@ class DefaultBootstrap implements Bootstrap {
                     try {
                         class1 = Class.forName(s);
                     } catch (ClassNotFoundException e) {
-                        LOGGER.w("class is not loaded: " + s);
+                        LOGGER.w("class is not loaded: {}. Are lib or dependencies missing?", s);
                         class1 = df.loadClass(s, Thread.currentThread().getContextClassLoader());
+                    }
+                    if (class1 == null) {
+                        LOGGER.w("Class is missing, skipped: {}", s);
+                        continue;
                     }
                     for (Annotation ann : class1.getAnnotations()) {
                         if (ann.annotationType().equals(Component.class)) {

@@ -12,4 +12,6 @@ public @interface InjectView {
     int value();
     
     String layout() default "";
+
+    boolean required() default true;
 }

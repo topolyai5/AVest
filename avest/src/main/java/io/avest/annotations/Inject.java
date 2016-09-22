@@ -9,4 +9,6 @@ import java.lang.annotation.Target;
 @Target(ElementType.FIELD)
 public @interface Inject {
     Class value() default Object.class;
+
+    boolean required() default true;
 }
